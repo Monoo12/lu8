@@ -185,6 +185,36 @@
             opacity: 1;
         }
 
+        .audio-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .audio-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .audio-btn:hover {
+            background: rgba(231, 76, 60, 1);
+            transform: scale(1.1);
+        }
+
+        .audio-btn:active {
+            transform: scale(0.95);
+        }
+
         @media (max-width: 480px) {
             .letter-content {
                 font-size: 13px;
@@ -197,10 +227,33 @@
             .container {
                 max-width: 350px;
             }
+            
+            .audio-controls {
+                top: 15px;
+                right: 15px;
+            }
+            
+            .audio-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 18px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Audio de fondo -->
+    <audio id="backgroundMusic" loop preload="auto">
+        <source src="musica-romantica.mp3" type="audio/mpeg">
+        <source src="musica-romantica.wav" type="audio/wav">
+        Tu navegador no soporta el elemento de audio.
+    </audio>
+    
+    <!-- Controles de audio -->
+    <div class="audio-controls">
+        <button id="playPauseBtn" class="audio-btn" title="Música">🎵</button>
+    </div>
+    
     <div class="floating-hearts" id="heartsContainer"></div>
     
     <div class="container">
@@ -221,7 +274,7 @@
                     
                     <p>Pero el punto es que nos amamos y cuidamos. Te agradezco mucho por aparecerte en mi vida, yo creo que no fue aleatorio si te lo pones a pensar tuvieron que pasar muchas casualidades para que me aparezcas en la lista de seguidores de un random, te mande un mensaje, me muestres tus dibujitos y me enamoraras… fue el destino.</p>
                     
-                    <p>Gracias mi vida no solo por eso, tambien por aguantarme, hacerme feliz, mimarme y en si ser el novio perfecto. Sos lo que toda mi adolescencia estuve buscando, alguien con quien compartir todo, alguien MUY hermoso, que me trate bien, le guste hacer mis planes locos y de todo.</p>
+                    <p>Gracias mi vida no solo por eso, tambien por aguantarme, hacerme feliz, mimarme y en si ser el novio perfecto. Sos lo que toda mi adolescencia estuve buscando, alguien con whom comparitir todo, alguien MUY hermoso, que me trate bien, le guste hacer mis planes locos y de todo.</p>
                     
                     <p>Y aunque es un poco gliche no hay palabras suficientes para expresar lo que me haces sentir, Estos 8 meses fueron los mas especiales de mi vida con todos los momentos hermosos que vivimos juntos, los besitos, cada mimo, cada salida, cada respiro. Todo de vos me enamora cada día mas.</p>
                     
@@ -239,7 +292,7 @@
         </div>
         
         <div class="click-hint" id="clickHint">
-            Toca el sobre para abrir tu carta ❤️
+            
         </div>
     </div>
 
@@ -247,8 +300,45 @@
         const envelope = document.getElementById('envelope');
         const closeBtn = document.getElementById('closeBtn');
         const heartsContainer = document.getElementById('heartsContainer');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const playPauseBtn = document.getElementById('playPauseBtn');
         
         let isOpen = false;
+        let isPlaying = false;
+        let audioInitialized = false;
+        
+        // Configurar audio
+        backgroundMusic.volume = 0.3;
+        
+        // Función para reproducir/pausar música
+        function toggleMusic() {
+            if (isPlaying) {
+                backgroundMusic.pause();
+                playPauseBtn.textContent = '🔇';
+                isPlaying = false;
+            } else {
+                backgroundMusic.play().then(() => {
+                    playPauseBtn.textContent = '🔊';
+                    isPlaying = true;
+                }).catch((error) => {
+                    console.log('Error al reproducir audio:', error);
+                    playPauseBtn.textContent = '⚠️';
+                });
+            }
+        }
+        
+        // Función para inicializar audio después de interacción del usuario
+        function initAudio() {
+            if (!audioInitialized) {
+                audioInitialized = true;
+                // Intenta reproducir y pausar inmediatamente para "despertar" el audio
+                backgroundMusic.play().then(() => {
+                    backgroundMusic.pause();
+                }).catch(() => {
+                    console.log('Audio no disponible');
+                });
+            }
+        }
         
         // Función para abrir/cerrar el sobre
         function toggleEnvelope() {
@@ -256,6 +346,19 @@
                 envelope.classList.add('opened');
                 isOpen = true;
                 createFloatingHearts();
+                
+                // Inicializar e intentar reproducir música
+                initAudio();
+                if (!isPlaying) {
+                    setTimeout(() => {
+                        backgroundMusic.play().then(() => {
+                            playPauseBtn.textContent = '🔊';
+                            isPlaying = true;
+                        }).catch((error) => {
+                            console.log('No se pudo reproducir automáticamente:', error);
+                        });
+                    }, 500);
+                }
             }
         }
         
@@ -302,10 +405,45 @@
             closeEnvelope();
         });
         
+        // Control de música
+        playPauseBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            initAudio();
+            toggleMusic();
+        });
+        
+        // Manejar eventos de audio
+        backgroundMusic.addEventListener('loadstart', function() {
+            console.log('Cargando audio...');
+        });
+        
+        backgroundMusic.addEventListener('canplay', function() {
+            console.log('Audio listo para reproducir');
+            if (playPauseBtn.textContent === '⚠️') {
+                playPauseBtn.textContent = '🎵';
+            }
+        });
+        
+        backgroundMusic.addEventListener('error', function(e) {
+            console.log('Error al cargar el archivo de audio:', e);
+            playPauseBtn.textContent = '❌';
+            playPauseBtn.title = 'Error: archivo de audio no encontrado';
+        });
+        
+        backgroundMusic.addEventListener('ended', function() {
+            // No debería pasar con loop, pero por si acaso
+            isPlaying = false;
+            playPauseBtn.textContent = '🔇';
+        });
+        
         // Prevenir zoom en doble tap en móviles
         envelope.addEventListener('touchend', function(e) {
             e.preventDefault();
         });
+        
+        // Inicializar audio con cualquier interacción
+        document.addEventListener('touchstart', initAudio, { once: true });
+        document.addEventListener('click', initAudio, { once: true });
         
         // Crear algunos corazones iniciales
         setTimeout(() => {
